@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: kube-app
+  labels:
+    app: postgres-db
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+  selector:
+    app: postgres-db
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db-deployment
+  namespace: kube-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+        - name: postgres-db
+          image: postgres:10.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-volume
+      volumes:
+        - name: postgres-volume
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
